@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
@@ -95,7 +96,7 @@ func EncodeReadResponse(resp *prompb.ReadResponse, w http.ResponseWriter) error 
 }
 
 // ToQuery builds a Query proto.
-func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHints) (*prompb.Query, error) {
+func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHints, lookbackDelta time.Duration) (*prompb.Query, error) {
 	ms, err := toLabelMatchers(matchers)
 	if err != nil {
 		return nil, err
@@ -104,13 +105,14 @@ func ToQuery(from, to int64, matchers []*labels.Matcher, hints *storage.SelectHi
 	var rp *prompb.ReadHints
 	if hints != nil {
 		rp = &prompb.ReadHints{
-			StartMs:  hints.Start,
-			EndMs:    hints.End,
-			StepMs:   hints.Step,
-			Func:     hints.Func,
-			Grouping: hints.Grouping,
-			By:       hints.By,
-			RangeMs:  hints.Range,
+			StartMs:         hints.Start,
+			EndMs:           hints.End,
+			StepMs:          hints.Step,
+			Func:            hints.Func,
+			Grouping:        hints.Grouping,
+			By:              hints.By,
+			RangeMs:         hints.Range,
+			LookbackDeltaMs: lookbackDelta.Milliseconds(),
 		}
 	}
 

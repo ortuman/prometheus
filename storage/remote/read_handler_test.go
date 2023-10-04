@@ -64,10 +64,10 @@ func TestSampledReadEndpoint(t *testing.T) {
 	matcher3, err := labels.NewMatcher(labels.MatchEqual, "__name__", "test_histogram_metric1")
 	require.NoError(t, err)
 
-	query1, err := ToQuery(0, 1, []*labels.Matcher{matcher1, matcher2}, &storage.SelectHints{Step: 0, Func: "avg"})
+	query1, err := ToQuery(0, 1, []*labels.Matcher{matcher1, matcher2}, &storage.SelectHints{Step: 0, Func: "avg"}, time.Minute*5)
 	require.NoError(t, err)
 
-	query2, err := ToQuery(0, 1, []*labels.Matcher{matcher3, matcher2}, &storage.SelectHints{Step: 0, Func: "avg"})
+	query2, err := ToQuery(0, 1, []*labels.Matcher{matcher3, matcher2}, &storage.SelectHints{Step: 0, Func: "avg"}, time.Minute*5)
 	require.NoError(t, err)
 
 	req := &prompb.ReadRequest{Queries: []*prompb.Query{query1, query2}}
@@ -155,7 +155,7 @@ func BenchmarkStreamReadEndpoint(b *testing.B) {
 		Func:  "sum",
 		Start: 0,
 		End:   14400001,
-	})
+	}, time.Minute*5)
 	require.NoError(b, err)
 
 	req := &prompb.ReadRequest{
@@ -241,7 +241,7 @@ func TestStreamReadEndpoint(t *testing.T) {
 		Func:  "avg",
 		Start: 0,
 		End:   14400001,
-	})
+	}, time.Minute*5)
 	require.NoError(t, err)
 
 	query2, err := ToQuery(0, 14400001, []*labels.Matcher{matcher1, matcher3}, &storage.SelectHints{
@@ -249,7 +249,7 @@ func TestStreamReadEndpoint(t *testing.T) {
 		Func:  "avg",
 		Start: 0,
 		End:   14400001,
-	})
+	}, time.Minute*5)
 	require.NoError(t, err)
 
 	query3, err := ToQuery(0, 14400001, []*labels.Matcher{matcher4}, &storage.SelectHints{
@@ -257,7 +257,7 @@ func TestStreamReadEndpoint(t *testing.T) {
 		Func:  "avg",
 		Start: 0,
 		End:   14400001,
-	})
+	}, time.Minute*5)
 	require.NoError(t, err)
 
 	req := &prompb.ReadRequest{

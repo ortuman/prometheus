@@ -17,6 +17,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/storage"
@@ -29,6 +30,7 @@ type sampleAndChunkQueryableClient struct {
 	requiredMatchers []*labels.Matcher
 	readRecent       bool
 	callback         startTimeCallback
+	lookbackDelta    time.Duration
 }
 
 // NewSampleAndChunkQueryableClient returns a storage.SampleAndChunkQueryable which queries the given client to select series sets.
@@ -38,6 +40,7 @@ func NewSampleAndChunkQueryableClient(
 	requiredMatchers []*labels.Matcher,
 	readRecent bool,
 	callback startTimeCallback,
+	lookbackDelta time.Duration,
 ) storage.SampleAndChunkQueryable {
 	return &sampleAndChunkQueryableClient{
 		client: c,
@@ -46,6 +49,7 @@ func NewSampleAndChunkQueryableClient(
 		requiredMatchers: requiredMatchers,
 		readRecent:       readRecent,
 		callback:         callback,
+		lookbackDelta:    lookbackDelta,
 	}
 }
 
@@ -56,6 +60,7 @@ func (c *sampleAndChunkQueryableClient) Querier(mint, maxt int64) (storage.Queri
 		client:           c.client,
 		externalLabels:   c.externalLabels,
 		requiredMatchers: c.requiredMatchers,
+		lookbackDelta:    c.lookbackDelta,
 	}
 	if c.readRecent {
 		return q, nil
@@ -83,6 +88,7 @@ func (c *sampleAndChunkQueryableClient) ChunkQuerier(mint, maxt int64) (storage.
 			client:           c.client,
 			externalLabels:   c.externalLabels,
 			requiredMatchers: c.requiredMatchers,
+			lookbackDelta:    c.lookbackDelta,
 		},
 	}
 	if c.readRecent {
@@ -130,6 +136,8 @@ type querier struct {
 	// Derived from configuration.
 	externalLabels   labels.Labels
 	requiredMatchers []*labels.Matcher
+
+	lookbackDelta time.Duration
 }
 
 // Select implements storage.Querier and uses the given matchers to read series sets from the client.
@@ -160,7 +168,7 @@ func (q *querier) Select(ctx context.Context, sortSeries bool, hints *storage.Se
 	}
 
 	m, added := q.addExternalLabels(matchers)
-	query, err := ToQuery(q.mint, q.maxt, m, hints)
+	query, err := ToQuery(q.mint, q.maxt, m, hints, q.lookbackDelta)
 	if err != nil {
 		return storage.ErrSeriesSet(fmt.Errorf("toQuery: %w", err))
 	}

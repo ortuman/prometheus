@@ -59,10 +59,11 @@ type Storage struct {
 	// For reads.
 	queryables             []storage.SampleAndChunkQueryable
 	localStartTimeCallback startTimeCallback
+	lookbackDelta          time.Duration
 }
 
 // NewStorage returns a remote.Storage.
-func NewStorage(l log.Logger, reg prometheus.Registerer, stCallback startTimeCallback, walDir string, flushDeadline time.Duration, sm ReadyScrapeManager) *Storage {
+func NewStorage(l log.Logger, reg prometheus.Registerer, stCallback startTimeCallback, walDir string, flushDeadline, lookbackDelta time.Duration, sm ReadyScrapeManager) *Storage {
 	if l == nil {
 		l = log.NewNopLogger()
 	}
@@ -71,6 +72,7 @@ func NewStorage(l log.Logger, reg prometheus.Registerer, stCallback startTimeCal
 	s := &Storage{
 		logger:                 logger,
 		localStartTimeCallback: stCallback,
+		lookbackDelta:          lookbackDelta,
 	}
 	s.rws = NewWriteStorage(s.logger, reg, walDir, flushDeadline, sm)
 	return s
@@ -135,6 +137,7 @@ func (s *Storage) ApplyConfig(conf *config.Config) error {
 			labelsToEqualityMatchers(rrConf.RequiredMatchers),
 			rrConf.ReadRecent,
 			s.localStartTimeCallback,
+			s.lookbackDelta,
 		))
 	}
 	s.queryables = queryables

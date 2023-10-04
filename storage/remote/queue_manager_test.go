@@ -46,7 +46,10 @@ import (
 	"github.com/prometheus/prometheus/tsdb/record"
 )
 
-const defaultFlushDeadline = 1 * time.Minute
+const (
+	defaultFlushDeadline = 1 * time.Minute
+	defaultLookback      = 5 * time.Minute
+)
 
 func newHighestTimestampMetric() *maxTimestamp {
 	return &maxTimestamp{
@@ -80,7 +83,7 @@ func TestSampleDelivery(t *testing.T) {
 
 	dir := t.TempDir()
 
-	s := NewStorage(nil, nil, nil, dir, defaultFlushDeadline, nil)
+	s := NewStorage(nil, nil, nil, dir, defaultFlushDeadline, defaultLookback, nil)
 	defer s.Close()
 
 	queueConfig := config.DefaultQueueConfig
